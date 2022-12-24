@@ -1,0 +1,696 @@
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tugas_akhir/reusable_widgets/reusable_widget.dart';
+import 'package:tugas_akhir/screen/homescreen.dart';
+import 'package:tugas_akhir/screen/reg_screen.dart';
+import 'package:tugas_akhir/utils/color_utils.dart';
+
+class Login extends StatefulWidget {
+  Login({Key? key}) : super(key: key);
+
+  @override
+  State<Login> createState() => _LoginState();
+}
+
+class _LoginState extends State<Login> {
+  FirebaseDatabase fireDB = FirebaseDatabase.instance;
+
+  TextEditingController username = TextEditingController();
+  TextEditingController password = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    cekUser();
+  }
+
+  cekUser() {
+    getAuth().then((value) {
+      if (value.value != null) {
+        navigatorPushReplace(context, page: Dashboard());
+      }
+    });
+  }
+
+  login() async {
+    try {
+      var result = await fireDB.ref('user').get();
+      var data = result.children.toList().where((item) {
+        if ((item.value as dynamic)['username'] == username.text) {
+          return true;
+        }
+
+        return false;
+      });
+
+      if (data.isEmpty) {
+        notif(context, text: 'username tidak ditemukan', color: Colors.red);
+      } else {
+        for (var item in data) {
+          if ((item.value as dynamic)['password'] == password.text) {
+            SharedPreferences session = await SharedPreferences.getInstance();
+            session.setString('auth', item.key.toString());
+
+            notif(context, text: 'berhasil login', color: Colors.green);
+            navigatorPushReplace(context, page: Dashboard());
+            return true;
+          }
+        }
+
+        notif(context, text: 'password salah', color: Colors.red);
+      }
+    } catch (e) {
+      notif(context, text: e.toString(), color: Colors.red);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var size = MediaQuery.of(context).size;
+
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: Stack(
+          children: [
+            Container(
+              height: size.height * .45,
+              width: size.width,
+              color: Color.fromARGB(255, 22, 1, 117),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  SizedBox(height: 75 ),
+                  Image.asset('assets/img/icon2.png',
+                  width: 200,),
+                  SizedBox(height: size.height * .1),
+                  Panel(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                    child: Column(
+                      children: [
+                        Text(
+                          'LOGIN',
+                          style:
+                              TextStyle(color: cPrimary, fontSize: 24, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 40),
+                        TextFormField(
+                          controller: username,
+                          decoration: InputDecoration(
+                            hintText: 'Username anda',
+                            label: Text('Username'),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        TextFormField(
+                          controller: password,
+                          obscureText: true,
+                          decoration: InputDecoration(
+                            hintText: 'Password anda',
+                            label: Text('Password'),
+                          ),
+                        ),
+                        SizedBox(height: 40),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: Container(
+                            color: cPrimary,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: login,
+                                child: Container(
+                                  padding: EdgeInsets.all(20),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'LOGIN',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Belum punya akun? register '),
+                            GestureDetector(
+                              onTap: () {
+                                navigatorPushReplace(context, page: Register());
+                              },
+                              child: Text(
+                                'disini',
+                                style: TextStyle(color: Color.fromARGB(255, 255, 0, 255)),
+                              ),
+                            )
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+///=================== Register ========================== ///
+
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
+import 'package:tugas_akhir/reusable_widgets/reusable_widget.dart';
+import 'package:tugas_akhir/screen/login_screen.dart';
+import 'package:tugas_akhir/utils/color_utils.dart';
+
+class Register extends StatefulWidget {
+  Register({Key? key}) : super(key: key);
+
+  @override
+  State<Register> createState() => _RegisterState();
+}
+
+class _RegisterState extends State<Register> {
+  FirebaseDatabase fireDB = FirebaseDatabase.instance;
+
+  TextEditingController username = TextEditingController();
+  TextEditingController password = TextEditingController();
+  TextEditingController nama = TextEditingController();
+  TextEditingController nomorTelepon = TextEditingController();
+
+  register() async {
+    try {
+      var result = await fireDB.ref('user').get();
+      var data = result.children.toList().where((item) {
+        if ((item.value as dynamic)['username'] == username.text) {
+          return true;
+        }
+        return false;
+      });
+
+      if (data.isEmpty) {
+        await fireDB.ref('user').push().set({
+          'username': username.text,
+          'nama': nama.text,
+          'password': password.text,
+          'nomorTelepon': nomorTelepon.text,
+          'role': '2',
+        }).then((value) {
+          notif(context, text: 'registrasi akun berhasil. silahkan login!', color: Colors.green);
+          navigatorPushReplace(context, page: Login());
+        });
+      } else {
+        notif(context, text: 'username sudah digunakan', color: Colors.red);
+      }
+    } catch (e) {
+      notif(context, text: e.toString(), color: Colors.red);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var size = MediaQuery.of(context).size;
+
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: Stack(
+          children: [
+            Container(
+              height: size.height * .45,
+              width: size.width,
+              color: Color.fromARGB(255, 22, 1, 117),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  SizedBox(height: size.height * .15),
+                  Panel(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                    child: Column(
+                      children: [
+                        Text(
+                          'REGISTER',
+                          style:
+                              TextStyle(color: cPrimary, fontSize: 24, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 40),
+                        TextFormField(
+                          controller: username,
+                          decoration: InputDecoration(
+                            hintText: 'Username anda',
+                            label: Text('Username'),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        TextFormField(
+                          controller: password,
+                          obscureText: true,
+                          decoration: InputDecoration(
+                            hintText: '********',
+                            label: Text('Password'),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        TextFormField(
+                          controller: nama,
+                          decoration: InputDecoration(
+                            hintText: 'Nama anda',
+                            label: Text('Nama'),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        TextFormField(
+                          controller: nomorTelepon,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            hintText: '62xxxxxxxxx',
+                            label: Text('Nomor Telepon'),
+                          ),
+                        ),
+                        SizedBox(height: 40),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: Container(
+                            color: cPrimary,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: register,
+                                child: Container(
+                                  padding: EdgeInsets.all(20),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'REGISTER',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Sudah punya akun? login '),
+                            GestureDetector(
+                              onTap: () {
+                                navigatorPushReplace(context, page: Login());
+                              },
+                              child: Text(
+                                'disini',
+                                style: TextStyle(color: Color.fromARGB(255, 255, 0, 255)),
+                              ),
+                            )
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ===================== Homescreen ==========================
+
+import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:tugas_akhir/main.dart';
+import 'package:tugas_akhir/reusable_widgets/reusable_widget.dart';
+import 'package:tugas_akhir/screen/login_screen.dart';
+import 'package:tugas_akhir/screen/profile.dart';
+import 'package:tugas_akhir/screen/user.dart';
+import 'package:tugas_akhir/utils/color_utils.dart';
+import 'package:flare_flutter/flare_actor.dart';
+
+class Dashboard extends StatefulWidget {
+  Dashboard({Key? key}) : super(key: key);
+
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
+  TextEditingController searchLocation = TextEditingController();
+
+  String userNama = '';
+  Position position = Position(
+    longitude: 0,
+    latitude: 0,
+    timestamp: DateTime.now(),
+    accuracy: 0,
+    altitude: 0,
+    heading: 0,
+    speed: 0,
+    speedAccuracy: 0,
+  );
+  bool loading = false;
+  String address = 'Tidak diketahui';
+
+  @override
+  void initState() {
+    super.initState();
+    getUser();
+    getLocation();
+  }
+
+  void getUser() async {
+    getAuth().then((value) {
+      if (value == null) {
+        navigatorPushReplace(context, page: Login());
+      } else {
+        setState(() {
+          userNama = value.value['nama'];
+        });
+      }
+    });
+  }
+
+  void goToLocation() async {
+    var intent = AndroidIntent(
+      action: 'action_view',
+      data: 'google.navigation:q=${searchLocation.text}',
+    );
+    await intent.launch();
+  }
+
+  getLocation() async {
+    setState(() {
+      loading = true;
+    });
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      notif(context, text: 'service lokasi tidak tersedia', color: Colors.red);
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        notif(context, text: 'Akses lokasi tidak diizinkan');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      notif(context, text: 'Akses lokasi tidak diizinkan secara permanen');
+    }
+
+    var location = await Geolocator.getCurrentPosition();
+    var placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+    var place = placemarks[0];
+
+    setState(() {
+      position = location;
+      loading = false;
+      address =
+          "${place.street}, ${place.subLocality}, ${place.locality}, ${place.subAdministrativeArea}, ${place.country}";
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var size = MediaQuery.of(context).size;
+    
+    return Layout(
+      title: 'Dashboard',
+      body: ListView(
+        padding: EdgeInsets.all(20),
+        children: [
+          Panel(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Selamat Datang',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 5,),
+                Text(
+                  userNama,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: cPrimary),
+                ),
+                SizedBox(
+                  height: 35,
+                ),
+                Text(
+                  'Semoga hari anda menyenangkan!',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+          Panel(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Lokasi Saat ini',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 15),
+                Text(
+                  loading ? 'Memuat...' : address,
+                ),
+                SizedBox(height: 15),
+              ],
+            ),
+          ),
+          Panel(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mau Kemana?',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(
+                  height: 40,
+                ),
+                TextField(
+                  controller: searchLocation,
+                  decoration: InputDecoration(
+                    hintText: 'Lokasi yang ingin kamu tuju',
+                  ),
+                ),
+                SizedBox(height: 40),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: Container(
+                    color: cPrimary,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: goToLocation,
+                        child: Container(
+                          padding: EdgeInsets.all(20),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'GO...',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: getLocation,
+        child: Icon(
+          Icons.place,
+        ),
+      ),
+    );
+  }
+}
+
+class Layout extends StatefulWidget {
+  const Layout({
+    Key? key,
+
+    this.decoration,
+    this.body,
+    this.title,
+    this.floatingActionButton,
+  }) : super(key: key);
+  
+  final Widget? decoration;
+  final Widget? body;
+  final String? title;
+  final Widget? floatingActionButton;
+
+  @override
+  State<Layout> createState() => _LayoutState();
+}
+
+class _LayoutState extends State<Layout> {
+  String userUsername = '';
+  String userNama = '';
+  String userRole = '';
+
+  @override
+  void initState() {
+    super.initState();
+    cekUser();
+  }
+
+  void cekUser() {
+    getAuth().then((value) {
+      if (value.value != null) {
+        setState(() {
+          userUsername = value.value['username'];
+          userNama = value.value['nama'];
+          userRole = value.value['role'];
+        });
+      }
+    });
+  }
+
+  logout() async {
+    SharedPreferences session = await SharedPreferences.getInstance();
+    await session.clear();
+
+    navigatorPushReplace(context, page: Homepage());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var size = MediaQuery.of(context).size;
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.purple,
+        title: Text(widget.title.toString()),
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          Container(
+            height: size.height * .25,
+            width: size.width,
+            decoration: BoxDecoration(
+              color: cPrimary,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+            ),
+          ),
+          widget.body as Widget,
+        ],
+      ),
+      floatingActionButton: widget.floatingActionButton,
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            UserAccountsDrawerHeader(
+              decoration: BoxDecoration(color: Colors.purple),
+              currentAccountPicture: Container(               
+                height: 80,
+                width: 80,
+                decoration: BoxDecoration(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  shape: BoxShape.circle,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 34,
+                      backgroundImage: AssetImage('assets/img/admin.jpg',),
+                    )
+                  ],
+                ),
+              ),
+              accountName: Text(userUsername),
+              accountEmail: Text(userNama),
+            ),
+            ListTile(
+              leading: Icon(Icons.home),
+              title: Text('Dashboard'),
+              onTap: () {
+                navigatorPush(context, page: Dashboard());
+              },
+            ),
+            userRole == '1'
+                ? ListTile(
+                    leading: Icon(Icons.supervisor_account),
+                    title: Text('Data User'),
+                    onTap: () {
+                      navigatorPush(context, page: User());
+                    },
+                  )
+                : SizedBox(),
+            ListTile(
+              leading: Icon(Icons.account_circle),
+              title: Text('Profil'),
+              onTap: () {
+                navigatorPush(context, page: Profil());
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.logout),
+              title: Text('Logout'),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) {
+                    return AlertDialog(
+                      content: Text("Anda yakin akan logout?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            navigatorPop(context);
+                          },
+                          child: Text('BATAL'),
+                        ),
+                        TextButton(
+                          onPressed: logout,
+                          child: Text('LOGOUT'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
