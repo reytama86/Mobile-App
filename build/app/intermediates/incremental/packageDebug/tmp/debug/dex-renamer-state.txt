@@ -1,0 +1,4 @@
+#Thu Dec 22 08:55:11 ICT 2022
+base.0=D\:\\WORD\\TSA\\SS JMP\\tugas_akhir\\build\\app\\intermediates\\dex\\debug\\mergeDexDebug\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

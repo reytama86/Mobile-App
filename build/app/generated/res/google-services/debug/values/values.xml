@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="default_web_client_id" translatable="false">30492518883-iufmht5b7snds5rd602eigir3r25rd3o.apps.googleusercontent.com</string>
+    <string name="gcm_defaultSenderId" translatable="false">30492518883</string>
+    <string name="google_api_key" translatable="false">AIzaSyAY7rMVeT16O8f7MwcIWhHVPRg8oQeC6gw</string>
+    <string name="google_app_id" translatable="false">1:30492518883:android:b4412bee3aa293d42d18d6</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyAY7rMVeT16O8f7MwcIWhHVPRg8oQeC6gw</string>
+    <string name="google_storage_bucket" translatable="false">avalon-project-63700.appspot.com</string>
+    <string name="project_id" translatable="false">avalon-project-63700</string>
+</resources>
